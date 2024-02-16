@@ -8,9 +8,9 @@ import {
   clampValue,
 } from "./utils";
 
-const n = 40;
+const DEFAULT_DIMENSION = 40;
 
-const aliveCells = [
+const DEFAULT_POPULATION = [
   "12-2",
   "12-3",
   "12-4",
@@ -36,11 +36,11 @@ function App() {
   // base state
   const [isPaused, setIsPaused] = useState(true);
   const [isSetupMode, setIsSetupMode] = useState(false);
-  const [width, setWidth] = useState(n);
-  const [height, setHeight] = useState(n);
+  const [width, setWidth] = useState(DEFAULT_DIMENSION);
+  const [height, setHeight] = useState(DEFAULT_DIMENSION);
 
   // derived state
-  const [initialPopulation, setInitialPopulation] = useState(aliveCells);
+  const [initialPopulation, setInitialPopulation] = useState(DEFAULT_POPULATION);
   const [grid, setGrid] = useState(() =>
     initGrid(height, width, initialPopulation)
   );
@@ -122,14 +122,18 @@ function App() {
       </div>
       <div
         className="grid"
-        style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}
+        style={{ gridTemplateColumns: `repeat(${width}, 1fr)` }}
       >
         {createArrayOfNumbers(height).map((i) =>
           createArrayOfNumbers(width).map((j) => (
             <Cell
               id={`${i}-${j}`}
               key={`${i}-${j}`}
-              isAlive={grid[i][j]}
+              /*
+                we have to have this check conditionally because, height and width and the
+                grid do not update on the same "frame". The grid is late by one frame
+              */
+              isAlive={grid?.[i]?.[j] || false}
               onClick={(e) => {
                 if (isGameRunning || !isSetupMode) {
                   return;
