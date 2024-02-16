@@ -1,102 +1,157 @@
-import { useEffect, useState } from 'react';
-import Cell from './Cell'
+import { useCallback, useEffect, useState } from "react";
+import Cell from "./components/Cell";
 
-const n = 30;
-const arr =  Array.from(Array(n).keys());
+import {
+  initGrid,
+  updateGrid,
+  createArrayOfNumbers,
+  clampValue,
+} from "./utils";
 
-const aliveCells = ['12-2','12-3','12-4','11-4','10-3','10-22','10-23','10-24','14-22','15-22','11-22','13-24','12-24','6-6','6-7','6-8','7-7','7-8','7-9'];
+const n = 40;
 
-const updateCell = (currentStatus, count) => {
-  switch (count) {
-    case 0:
-    case 1:
-      return false;
-    case 2:
-      return currentStatus;
-    case 3:
-      return true;
-    default:
-      return false;
-  }
-}
-
-const getNumberOfAliveCells = (i, j, grid) => {
-  let counter = 0;
-
-  for (let ci = i-1; ci <= i + 1; ci++) {
-    for (let cj = j-1; cj <= j + 1; cj++) {
-      if (ci === i && cj === j) {
-        continue;
-      }
-      if (grid?.[ci]?.[cj]) {
-        counter++;
-      }
-    }
-  }
-
-  return counter;
-}
-
-const emptyGrid = () => arr.map(() => (
-  arr.map(() => {
-    return false
-  })
-));
-
-const initGrid = arr.map((i) => (
-  arr.map((j) => {
-    if (aliveCells.includes(`${i}-${j}`)) {
-      return true;
-    }
-    return false
-  })
-))
-
-const updateGrid = (grid) => {
-  const newGrid = [...emptyGrid()];
-
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      const count = getNumberOfAliveCells(i, j, grid);
-      newGrid[i][j] = updateCell(grid[i][j], count);
-    }
-  }
-
-  return newGrid;
-}
+const aliveCells = [
+  "12-2",
+  "12-3",
+  "12-4",
+  "11-4",
+  "10-3",
+  "10-22",
+  "10-23",
+  "10-24",
+  "14-22",
+  "15-22",
+  "11-22",
+  "13-24",
+  "12-24",
+  "6-6",
+  "6-7",
+  "6-8",
+  "7-7",
+  "7-8",
+  "7-9",
+];
 
 function App() {
-  const [grid, setGrid] = useState(() => initGrid);
+  // base state
+  const [isPaused, setIsPaused] = useState(true);
+  const [isSetupMode, setIsSetupMode] = useState(false);
+  const [width, setWidth] = useState(n);
+  const [height, setHeight] = useState(n);
+
+  // derived state
+  const [initialPopulation, setInitialPopulation] = useState(aliveCells);
+  const [grid, setGrid] = useState(() =>
+    initGrid(height, width, initialPopulation)
+  );
+
+  const isGameRunning = !isPaused && !isSetupMode;
+
+  const update = useCallback(() => {
+    return setInterval(() => {
+      if (!isGameRunning) {
+        return;
+      }
+      setGrid((old) => updateGrid(old, height, width));
+    }, 200);
+  }, [isGameRunning, height, width]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setGrid(old => updateGrid(old))
-    }, 500)
-
+    const timer = update();
     return () => {
       clearInterval(timer);
-    }
-  }, []);
+    };
+  }, [update]);
 
-  const renderUpdateButton = () => {
-    return <button onClick={() => {
-      setGrid(old => updateGrid([...old]))
-    }}>
-      Update
-    </button>
-  }
+  useEffect(() => {
+    setGrid(initGrid(height, width, initialPopulation));
+  }, [height, width, initialPopulation]);
 
   return (
-    <div className="grid" style={{ gridTemplateColumns: `repeat(${n}, 1fr)`}}>
-      {
-        Array.from(Array(n).keys()).map(i => (
-          Array.from(Array(n).keys()).map(j => (
-            <Cell key={`${i}-${j}`} isAlive={grid[i][j]} />
+    <>
+      <h1>React&apos;s game of life</h1>
+      <p>
+        A recreation of{" "}
+        <a
+          href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life"
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          Conway&apos;s game of life
+        </a>{" "}
+        in React. (because why not)
+      </p>
+      <div className="form">
+        <input
+          disabled={isGameRunning || isSetupMode}
+          value={width}
+          placeholder="width"
+          min="20"
+          max="50"
+          type="number"
+          onChange={(e) => setWidth(clampValue(parseInt(e.target.value, 10)))}
+        />
+        <input
+          disabled={isGameRunning || isSetupMode}
+          value={height}
+          placeholder="height"
+          min="20"
+          max="50"
+          type="number"
+          onChange={(e) => setHeight(clampValue(parseInt(e.target.value, 10)))}
+        />
+        <button
+          type="button"
+          disabled={isSetupMode}
+          onClick={() =>
+            setIsPaused((p) => {
+              return !p;
+            })
+          }
+        >
+          {isPaused ? "Start" : "Pause"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setIsSetupMode((p) => !p);
+          }}
+        >
+          {isSetupMode ? "Set initial population" : "Update initial population"}
+        </button>
+      </div>
+      <div
+        className="grid"
+        style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}
+      >
+        {createArrayOfNumbers(height).map((i) =>
+          createArrayOfNumbers(width).map((j) => (
+            <Cell
+              id={`${i}-${j}`}
+              key={`${i}-${j}`}
+              isAlive={grid[i][j]}
+              onClick={(e) => {
+                if (isGameRunning || !isSetupMode) {
+                  return;
+                }
+
+                const stringId = `${e.target.id}`;
+
+                if (initialPopulation.includes(stringId)) {
+                  setInitialPopulation((p) => [
+                    ...p.filter((e) => e !== stringId),
+                  ]);
+                  return;
+                }
+
+                setInitialPopulation((p) => [...p, stringId]);
+              }}
+            />
           ))
-        ))
-      }
-    </div>
-  )
+        )}
+      </div>
+    </>
+  );
 }
 
-export default App
+export default App;
