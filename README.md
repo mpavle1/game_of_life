@@ -1,8 +1,5 @@
-# React + Vite
+# Conways game of life, in React
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is a implementation of (Conway's game of life)[https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life] in React.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Altho, this cellular automaton is not complicated to implement, this was more of a challange to see how to optimise rerendering in React.
